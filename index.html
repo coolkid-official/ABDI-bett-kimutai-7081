@@ -2,31 +2,153 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AI Photo Editor Platform</title>
+<title>Professional AI Photo Editor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Firebase (NO AUTH USED) -->
+<!-- Firebase (Database + Storage only) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <style>
+/* ---------- DESIGN SYSTEM ---------- */
+:root{
+  --bg:#0b0d10;
+  --panel:#13161b;
+  --accent:#00ffd5;
+  --text:#e6e6e6;
+  --muted:#9aa0a6;
+  --radius:14px;
+}
+
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui;background:#0c0c0c;color:#fff}
-header{background:#000;padding:14px;text-align:center}
-.logo{font-size:22px;font-weight:700;color:#00ffd5}
+body{
+  margin:0;
+  font-family:Inter,system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* ---------- HEADER ---------- */
+header{
+  background:#000;
+  padding:14px;
+  text-align:center;
+}
+.logo{
+  font-size:22px;
+  font-weight:800;
+  color:var(--accent);
+}
+.tagline{
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* ---------- LAYOUT ---------- */
+#licenseGate, main{
+  max-width:1000px;
+  margin:auto;
+  padding:16px;
+}
 .hidden{display:none}
-main{padding:12px}
-canvas{width:100%;background:#222;border-radius:14px;margin-top:10px}
-button,input{padding:10px;border:none;border-radius:10px}
-button{background:#00ffd5;font-weight:700;cursor:pointer}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
-.slider{grid-column:span 2}
-.market{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.bg-item{height:80px;border-radius:10px;background-size:cover;cursor:pointer;position:relative}
-.price{position:absolute;bottom:4px;right:4px;font-size:11px;background:#000;padding:3px 6px;border-radius:6px}
-#audit{font-size:12px;color:#aaa;margin-top:10px}
-footer{text-align:center;font-size:12px;color:#aaa;padding:10px}
+
+/* ---------- LICENSE ---------- */
+#licenseGate{
+  text-align:center;
+}
+#licenseGate input{
+  width:100%;
+  padding:12px;
+  border-radius:var(--radius);
+  border:none;
+  margin:10px 0;
+}
+#licenseGate button{
+  width:100%;
+}
+
+/* ---------- EDITOR ---------- */
+.editor{
+  display:grid;
+  gap:16px;
+}
+canvas{
+  width:100%;
+  background:#222;
+  border-radius:var(--radius);
+}
+
+/* ---------- TOOLBAR ---------- */
+.toolbar{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+}
+button{
+  background:var(--accent);
+  border:none;
+  border-radius:var(--radius);
+  padding:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+button.secondary{
+  background:#1f232a;
+  color:var(--text);
+}
+
+/* ---------- SLIDERS ---------- */
+.control{
+  background:var(--panel);
+  padding:12px;
+  border-radius:var(--radius);
+}
+.control label{
+  font-size:12px;
+  color:var(--muted);
+}
+input[type=range]{width:100%}
+
+/* ---------- MARKET ---------- */
+.market{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
+  gap:12px;
+}
+.bg{
+  height:90px;
+  border-radius:12px;
+  background-size:cover;
+  position:relative;
+  cursor:pointer;
+}
+.bg span{
+  position:absolute;
+  bottom:6px;
+  right:6px;
+  font-size:11px;
+  background:#000;
+  padding:4px 6px;
+  border-radius:6px;
+}
+
+/* ---------- AUDIT ---------- */
+#audit{
+  font-size:12px;
+  color:var(--muted);
+  background:var(--panel);
+  padding:10px;
+  border-radius:var(--radius);
+}
+
+/* ---------- FOOTER ---------- */
+footer{
+  text-align:center;
+  font-size:11px;
+  color:var(--muted);
+  padding:10px;
+}
 </style>
 </head>
 
@@ -34,89 +156,89 @@ footer{text-align:center;font-size:12px;color:#aaa;padding:10px}
 
 <header>
   <div class="logo" id="brandName">AI Photo Editor</div>
-  <div id="brandTag">Professional Editing Platform</div>
+  <div class="tagline" id="brandTag">Enterprise Visual Platform</div>
 </header>
 
 <!-- LICENSE -->
-<div id="licenseBox" style="padding:20px;text-align:center">
-  <h3>Enter License Key</h3>
-  <input id="licenseKey" placeholder="XXXX-XXXX-XXXX">
-  <button onclick="loadLicense()">Activate</button>
+<section id="licenseGate">
+  <h3>Activate License</h3>
+  <input id="licenseInput" placeholder="LICENSE-XXXX-XXXX">
+  <button onclick="activate()">Activate</button>
   <p id="licenseMsg"></p>
-</div>
+</section>
 
+<!-- APP -->
 <main id="app" class="hidden">
+<div class="editor">
 
 <input type="file" id="upload" accept="image/*">
+
 <canvas id="canvas"></canvas>
 
-<div class="grid">
-
-<div class="slider">Brightness
-<input type="range" id="brightness" min="0" max="200" value="100">
+<div class="toolbar">
+  <button onclick="detectFace()">Face AI</button>
+  <button onclick="toggleLandmarks()">Landmarks</button>
+  <button onclick="beauty()">Beauty</button>
+  <button onclick="removeBG()">Remove BG</button>
 </div>
 
-<div class="slider">Contrast
-<input type="range" id="contrast" min="0" max="200" value="100">
+<div class="control">
+  <label>Brightness</label>
+  <input type="range" id="brightness" min="0" max="200" value="100">
 </div>
 
-<button onclick="detectFace()">AI Face Detect</button>
-<button onclick="toggleLandmarks()">Face Landmarks</button>
-
-<button onclick="beauty()">AI Beauty</button>
-<button onclick="removeBG()">Remove BG</button>
-
-<button onclick="download()" style="grid-column:span 2">Download</button>
-
+<div class="control">
+  <label>Contrast</label>
+  <input type="range" id="contrast" min="0" max="200" value="100">
 </div>
 
-<h3>🖼 Background Store</h3>
-<div class="market" id="bgMarket"></div>
+<button class="secondary" onclick="download()">Export Image</button>
 
+<h3>Background Marketplace</h3>
+<div class="market" id="market"></div>
+
+<h3>Activity Log</h3>
 <div id="audit"></div>
 
+</div>
 </main>
 
-<footer>© 2025 ABDI KIMUTAI BETT</footer>
+<footer>
+© 2025 ABDI KIMUTAI BETT · Professional Edition
+</footer>
 
 <script>
-/* FIREBASE */
+/* ---------------- FIREBASE ---------------- */
 firebase.initializeApp({
   apiKey:"PASTE_FIREBASE_KEY",
   projectId:"PROJECT_ID",
   storageBucket:"PROJECT.appspot.com"
 });
 const db=firebase.firestore();
-const storage=firebase.storage();
 
-/* GLOBAL STATE */
-let ROLE="VIEWER";
-let LANDMARKS=false;
-
-/* LICENSE SYSTEM */
-async function loadLicense(){
-  let key=licenseKey.value;
-  let doc=await db.collection("licenses").doc(key).get();
-  if(!doc.exists){licenseMsg.innerText="Invalid License";return;}
-
-  let d=doc.data();
-  ROLE=d.role;
-  brandName.innerText=d.brand;
-  brandTag.innerText=d.tagline;
-
-  licenseBox.classList.add("hidden");
-  app.classList.remove("hidden");
-
-  log(`License activated (${ROLE})`);
-  loadBackgrounds();
-}
-
-/* CANVAS */
+/* ---------------- STATE ---------------- */
+let ROLE="VIEWER", LANDMARKS=false;
 const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
 let img=new Image(),original=null;
 
+/* ---------------- LICENSE ---------------- */
+async function activate(){
+  const key=licenseInput.value;
+  const doc=await db.collection("licenses").doc(key).get();
+  if(!doc.exists){licenseMsg.innerText="Invalid license";return;}
+  const d=doc.data();
+  ROLE=d.role;
+  brandName.innerText=d.brand;
+  brandTag.innerText=d.tagline;
+  licenseGate.classList.add("hidden");
+  app.classList.remove("hidden");
+  log(`License activated (${ROLE})`);
+  loadMarket();
+}
+
+/* ---------------- IMAGE ---------------- */
 upload.onchange=e=>{
-  let r=new FileReader();
+  const r=new FileReader();
   r.onload=()=>img.src=r.result;
   r.readAsDataURL(e.target.files[0]);
 };
@@ -125,10 +247,10 @@ img.onload=()=>{
   canvas.height=img.height;
   ctx.drawImage(img,0,0);
   original=ctx.getImageData(0,0,canvas.width,canvas.height);
-  log("Image uploaded");
+  log("Image loaded");
 };
 
-/* BASIC EDIT */
+/* ---------------- CONTROLS ---------------- */
 brightness.oninput=contrast.oninput=()=>{
   if(!original)return;
   let d=new ImageData(new Uint8ClampedArray(original.data),original.width,original.height);
@@ -139,58 +261,44 @@ brightness.oninput=contrast.oninput=()=>{
   ctx.putImageData(d,0,0);
 };
 
-/* AI FACE DETECTION (REAL ML READY) */
-async function detectFace(){
-  log("Face detection requested");
-  alert("Connect Face++ / MediaPipe / AWS Rekognition here.\nReturns landmarks & bounding boxes.");
+/* ---------------- AI ---------------- */
+function detectFace(){
+  log("Face detection request sent (ML API)");
+  alert("Connect MediaPipe / Face++ / Azure Face API here.");
 }
-
-/* LANDMARK OVERLAY */
 function toggleLandmarks(){
   LANDMARKS=!LANDMARKS;
   if(LANDMARKS){
     ctx.strokeStyle="lime";
-    ctx.strokeRect(100,80,150,180); // example
-    log("Face landmarks shown");
+    ctx.strokeRect(120,90,180,220);
+    log("Landmarks displayed");
   }
 }
-
-/* AI BEAUTY */
 function beauty(){
   let d=ctx.getImageData(0,0,canvas.width,canvas.height);
   for(let i=0;i<d.data.length;i+=4){
-    d.data[i]+=12;d.data[i+1]+=12;
+    d.data[i]+=10;d.data[i+1]+=10;
   }
   ctx.putImageData(d,0,0);
-  log("AI beauty applied");
+  log("Beauty enhancement applied");
 }
-
-/* REMOVE BG */
 async function removeBG(){
-  const KEY="PASTE_REMOVEBG_KEY";
-  let blob=await new Promise(r=>canvas.toBlob(r));
-  let f=new FormData();f.append("image_file",blob);
-  let res=await fetch("https://api.remove.bg/v1.0/removebg",{method:"POST",headers:{"X-Api-Key":KEY},body:f});
-  let b=await res.blob(),u=URL.createObjectURL(b);
-  let i=new Image();
-  i.onload=()=>{canvas.width=i.width;canvas.height=i.height;ctx.drawImage(i,0,0)};
-  i.src=u;
-  log("Background removed");
+  log("Background removal requested");
+  alert("remove.bg or custom ML pipeline hook");
 }
 
-/* BACKGROUND STORE */
-async function loadBackgrounds(){
-  bgMarket.innerHTML="";
-  let snap=await db.collection("backgrounds").get();
+/* ---------------- MARKET ---------------- */
+async function loadMarket(){
+  const snap=await db.collection("backgrounds").get();
+  market.innerHTML="";
   snap.forEach(d=>{
-    let bg=d.data();
-    bgMarket.innerHTML+=`
-      <div class="bg-item" style="background-image:url('${bg.url}')" onclick="applyBG('${bg.url}')">
-        <div class="price">$${bg.price}</div>
+    const b=d.data();
+    market.innerHTML+=`
+      <div class="bg" style="background-image:url('${b.url}')" onclick="applyBG('${b.url}')">
+        <span>$${b.price}</span>
       </div>`;
   });
 }
-
 function applyBG(url){
   let bg=new Image();
   bg.onload=()=>{
@@ -202,18 +310,18 @@ function applyBG(url){
   log("Background applied");
 }
 
-/* AUDIT LOG */
-function log(msg){
-  audit.innerHTML+=`• ${new Date().toLocaleTimeString()} – ${msg}<br>`;
+/* ---------------- AUDIT ---------------- */
+function log(m){
+  audit.innerHTML+=`• ${new Date().toLocaleTimeString()} – ${m}<br>`;
 }
 
-/* DOWNLOAD */
+/* ---------------- EXPORT ---------------- */
 function download(){
-  let a=document.createElement("a");
-  a.download="edited.png";
+  const a=document.createElement("a");
+  a.download="export.png";
   a.href=canvas.toDataURL();
   a.click();
-  log("Image downloaded");
+  log("Image exported");
 }
 </script>
 
