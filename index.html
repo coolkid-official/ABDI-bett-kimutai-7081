@@ -2,187 +2,218 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ABDI KIMUTAI BETT | Photo Editor</title>
+<title>ABDI KIMUTAI BETT | AI Photo Editor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- APP ICON -->
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABFElEQVRYR+2WwQ2DMAxFv2JXkA3YQbYQbZBN2EG2EG2EG2EG7K9G3xDk8RZ5sJk5pN8Y8F2yEwFQmAN8ALfACFZ8A3YJ8AHcAzv6Ue4g1b5WJ4zqLkF0xA5kKQkJ6Btk4w2+oZK4B2mZp1m0U5nD1U3kQqC0F5C2rjJwQbRkKqzA0+0lD0QY9pJ4pWQhRz5EJ4F8bMZz+WwQwCz7Ckz2dXvJrQ0YB2k8H3v4xP2dXn4O4D8kD9QJ5ZgAAAABJRU5ErkJggg==">
+
 <style>
-* {
-  box-sizing: border-box;
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,sans-serif;
+  background:#0e0e0e;
+  color:#fff;
 }
 
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
-  text-align: center;
+/* SPLASH */
+#splash{
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  font-weight:bold;
+  z-index:9999;
 }
 
-header {
-  background: #000;
-  color: #fff;
-  padding: 20px;
+/* HEADER */
+header{
+  background:#000;
+  padding:12px;
+  text-align:center;
+}
+.logo{
+  color:#00ffd5;
+  font-size:22px;
 }
 
-main {
-  padding: 20px;
+/* MAIN */
+main{padding:10px}
+canvas{
+  width:100%;
+  border-radius:12px;
+  background:#222;
 }
 
-input[type="file"] {
-  margin: 15px 0;
+/* CONTROLS */
+.controls{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px;
+  margin-top:10px;
 }
-
-canvas {
-  max-width: 100%;
-  border: 2px solid #333;
-  margin-top: 20px;
+button,input[type=range]{
+  padding:10px;
+  border:none;
+  border-radius:8px;
 }
-
-.controls {
-  margin-top: 20px;
+button{
+  background:#00ffd5;
+  color:#000;
+  font-weight:bold;
 }
+button:active{transform:scale(.97)}
+.slider{grid-column:span 2}
 
-.controls label {
-  display: block;
-  margin-top: 10px;
-}
-
-.controls input,
-.controls button {
-  margin: 5px;
-  padding: 8px 12px;
-}
-
-button {
-  background: #000;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #333;
-}
-
-footer {
-  background: #000;
-  color: #fff;
-  padding: 10px;
-  margin-top: 30px;
+/* FOOTER */
+footer{
+  text-align:center;
+  font-size:12px;
+  color:#aaa;
+  padding:8px;
 }
 </style>
 </head>
 
 <body>
 
+<div id="splash">📸 ABDI KIMUTAI BETT</div>
+
 <header>
-  <h1>ABDI KIMUTAI BETT</h1>
-  <p>Online Photo Editing Website</p>
+  <div class="logo">ABDI KIMUTAI BETT</div>
+  <div>AI Photo Editor</div>
 </header>
 
 <main>
-  <input type="file" id="upload" accept="image/*">
 
-  <canvas id="canvas"></canvas>
+<input type="file" id="upload" accept="image/*">
 
-  <div class="controls">
-    <label>Brightness</label>
-    <input type="range" id="brightness" min="0" max="200" value="100">
+<canvas id="canvas"></canvas>
 
-    <label>Contrast</label>
-    <input type="range" id="contrast" min="0" max="200" value="100">
+<div class="controls">
 
-    <button id="grayscale">Grayscale</button>
-    <button id="reset">Reset</button>
-    <button id="download">Download</button>
-  </div>
+<div class="slider">Brightness
+<input type="range" id="brightness" min="0" max="200" value="100">
+</div>
+
+<div class="slider">Contrast
+<input type="range" id="contrast" min="0" max="200" value="100">
+</div>
+
+<button onclick="preset('vintage')">Vintage</button>
+<button onclick="preset('cool')">Cool</button>
+<button onclick="preset('warm')">Warm</button>
+<button onclick="preset('bw')">B & W</button>
+
+<button onclick="addText()">Add Text</button>
+<button onclick="addSticker()">Sticker</button>
+
+<button onclick="rotate()">Rotate</button>
+<button onclick="crop()">Crop</button>
+
+<button onclick="removeBG()">AI Remove BG</button>
+<button onclick="reset()">Reset</button>
+
+<button onclick="download()" style="grid-column:span 2">Download</button>
+
+</div>
+
 </main>
 
-<footer>
-  <p>© 2025 ABDI KIMUTAI BETT</p>
-</footer>
+<footer>© 2025 ABDI KIMUTAI BETT</footer>
 
 <script>
-const upload = document.getElementById("upload");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+setTimeout(()=>document.getElementById("splash").style.display="none",1500);
 
-const brightness = document.getElementById("brightness");
-const contrast = document.getElementById("contrast");
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+let img=new Image(), original=null;
 
-let image = new Image();
-let originalImageData = null;
-
-upload.addEventListener("change", function () {
-  const file = this.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function () {
-    image.src = reader.result;
-  };
-  reader.readAsDataURL(file);
-});
-
-image.onload = function () {
-  canvas.width = image.width;
-  canvas.height = image.height;
-  ctx.drawImage(image, 0, 0);
-  originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+upload.onchange=e=>{
+  let r=new FileReader();
+  r.onload=()=>img.src=r.result;
+  r.readAsDataURL(e.target.files[0]);
 };
 
-function applyFilters() {
-  if (!originalImageData) return;
+img.onload=()=>{
+  canvas.width=img.width;
+  canvas.height=img.height;
+  ctx.drawImage(img,0,0);
+  original=ctx.getImageData(0,0,canvas.width,canvas.height);
+};
 
-  const imgData = new ImageData(
-    new Uint8ClampedArray(originalImageData.data),
-    originalImageData.width,
-    originalImageData.height
-  );
-
-  const b = brightness.value / 100;
-  const c = contrast.value / 100;
-
-  for (let i = 0; i < imgData.data.length; i += 4) {
-    imgData.data[i] = imgData.data[i] * b * c;
-    imgData.data[i + 1] = imgData.data[i + 1] * b * c;
-    imgData.data[i + 2] = imgData.data[i + 2] * b * c;
+brightness.oninput=contrast.oninput=()=>{
+  if(!original)return;
+  let d=new ImageData(new Uint8ClampedArray(original.data),original.width,original.height);
+  let b=brightness.value/100,c=contrast.value/100;
+  for(let i=0;i<d.data.length;i+=4){
+    d.data[i]*=b*c;d.data[i+1]*=b*c;d.data[i+2]*=b*c;
   }
+  ctx.putImageData(d,0,0);
+};
 
-  ctx.putImageData(imgData, 0, 0);
+function preset(type){
+  let d=ctx.getImageData(0,0,canvas.width,canvas.height);
+  for(let i=0;i<d.data.length;i+=4){
+    let r=d.data[i],g=d.data[i+1],b=d.data[i+2];
+    if(type=="vintage"){d.data[i]=r*1.1;d.data[i+2]=b*0.8}
+    if(type=="cool"){d.data[i+2]+=20}
+    if(type=="warm"){d.data[i]+=20}
+    if(type=="bw"){let a=(r+g+b)/3;d.data[i]=d.data[i+1]=d.data[i+2]=a}
+  }
+  ctx.putImageData(d,0,0);
 }
 
-brightness.addEventListener("input", applyFilters);
-contrast.addEventListener("input", applyFilters);
+function rotate(){
+  let t=document.createElement("canvas"),x=t.getContext("2d");
+  t.width=canvas.height;t.height=canvas.width;
+  x.translate(t.width/2,t.height/2);
+  x.rotate(Math.PI/2);
+  x.drawImage(canvas,-canvas.width/2,-canvas.height/2);
+  canvas.width=t.width;canvas.height=t.height;
+  ctx.drawImage(t,0,0);
+  original=ctx.getImageData(0,0,canvas.width,canvas.height);
+}
 
-document.getElementById("grayscale").addEventListener("click", function () {
-  if (!originalImageData) return;
+function crop(){
+  let w=canvas.width*.8,h=canvas.height*.8;
+  let d=ctx.getImageData(canvas.width*.1,canvas.height*.1,w,h);
+  canvas.width=w;canvas.height=h;
+  ctx.putImageData(d,0,0);original=d;
+}
 
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  for (let i = 0; i < imgData.data.length; i += 4) {
-    const avg = (imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2]) / 3;
-    imgData.data[i] = avg;
-    imgData.data[i + 1] = avg;
-    imgData.data[i + 2] = avg;
-  }
-  ctx.putImageData(imgData, 0, 0);
-});
+function addText(){
+  let t=prompt("Enter text");
+  if(!t)return;
+  ctx.font="40px Arial";ctx.fillStyle="white";
+  ctx.fillText(t,50,80);
+}
 
-document.getElementById("reset").addEventListener("click", function () {
-  if (!originalImageData) return;
-  ctx.putImageData(originalImageData, 0, 0);
-  brightness.value = 100;
-  contrast.value = 100;
-});
+function addSticker(){
+  ctx.font="50px Arial";
+  ctx.fillText("😎",100,150);
+}
 
-document.getElementById("download").addEventListener("click", function () {
-  if (!originalImageData) return;
+async function removeBG(){
+  alert("Add your remove.bg API key inside code");
+  // API-ready placeholder
+}
 
-  const link = document.createElement("a");
-  link.download = "ABDI_KIMUTAI_BETT_Edited.png";
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-});
+function reset(){
+  if(original)ctx.putImageData(original,0,0);
+  brightness.value=100;contrast.value=100;
+}
+
+function download(){
+  let a=document.createElement("a");
+  a.download="ABDI_KIMUTAI_BETT_EDIT.png";
+  a.href=canvas.toDataURL();
+  a.click();
+}
 </script>
 
 </body>
