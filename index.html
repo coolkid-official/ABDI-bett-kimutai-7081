@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ABDI KIMUTAI BETT | Photo Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  text-align: center;
+}
+
+header {
+  background: #000;
+  color: #fff;
+  padding: 20px;
+}
+
+main {
+  padding: 20px;
+}
+
+input[type="file"] {
+  margin: 15px 0;
+}
+
+canvas {
+  max-width: 100%;
+  border: 2px solid #333;
+  margin-top: 20px;
+}
+
+.controls {
+  margin-top: 20px;
+}
+
+.controls label {
+  display: block;
+  margin-top: 10px;
+}
+
+.controls input,
+.controls button {
+  margin: 5px;
+  padding: 8px 12px;
+}
+
+button {
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #333;
+}
+
+footer {
+  background: #000;
+  color: #fff;
+  padding: 10px;
+  margin-top: 30px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>ABDI KIMUTAI BETT</h1>
+  <p>Online Photo Editing Website</p>
+</header>
+
+<main>
+  <input type="file" id="upload" accept="image/*">
+
+  <canvas id="canvas"></canvas>
+
+  <div class="controls">
+    <label>Brightness</label>
+    <input type="range" id="brightness" min="0" max="200" value="100">
+
+    <label>Contrast</label>
+    <input type="range" id="contrast" min="0" max="200" value="100">
+
+    <button id="grayscale">Grayscale</button>
+    <button id="reset">Reset</button>
+    <button id="download">Download</button>
+  </div>
+</main>
+
+<footer>
+  <p>© 2025 ABDI KIMUTAI BETT</p>
+</footer>
+
+<script>
+const upload = document.getElementById("upload");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const brightness = document.getElementById("brightness");
+const contrast = document.getElementById("contrast");
+
+let image = new Image();
+let originalImageData = null;
+
+upload.addEventListener("change", function () {
+  const file = this.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function () {
+    image.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+image.onload = function () {
+  canvas.width = image.width;
+  canvas.height = image.height;
+  ctx.drawImage(image, 0, 0);
+  originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+};
+
+function applyFilters() {
+  if (!originalImageData) return;
+
+  const imgData = new ImageData(
+    new Uint8ClampedArray(originalImageData.data),
+    originalImageData.width,
+    originalImageData.height
+  );
+
+  const b = brightness.value / 100;
+  const c = contrast.value / 100;
+
+  for (let i = 0; i < imgData.data.length; i += 4) {
+    imgData.data[i] = imgData.data[i] * b * c;
+    imgData.data[i + 1] = imgData.data[i + 1] * b * c;
+    imgData.data[i + 2] = imgData.data[i + 2] * b * c;
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
+
+brightness.addEventListener("input", applyFilters);
+contrast.addEventListener("input", applyFilters);
+
+document.getElementById("grayscale").addEventListener("click", function () {
+  if (!originalImageData) return;
+
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < imgData.data.length; i += 4) {
+    const avg = (imgData.data[i] + imgData.data[i + 1] + imgData.data[i + 2]) / 3;
+    imgData.data[i] = avg;
+    imgData.data[i + 1] = avg;
+    imgData.data[i + 2] = avg;
+  }
+  ctx.putImageData(imgData, 0, 0);
+});
+
+document.getElementById("reset").addEventListener("click", function () {
+  if (!originalImageData) return;
+  ctx.putImageData(originalImageData, 0, 0);
+  brightness.value = 100;
+  contrast.value = 100;
+});
+
+document.getElementById("download").addEventListener("click", function () {
+  if (!originalImageData) return;
+
+  const link = document.createElement("a");
+  link.download = "ABDI_KIMUTAI_BETT_Edited.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+});
+</script>
+
+</body>
+</html>
