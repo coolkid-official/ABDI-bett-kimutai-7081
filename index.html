@@ -2,61 +2,47 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ABDI KIMUTAI BETT | AI Photo Editor PRO</title>
+<title>AI Photo Editor Platform</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Firebase SDK -->
+<!-- Firebase (NO AUTH USED) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui;background:#0b0b0b;color:#fff}
+body{margin:0;font-family:system-ui;background:#0c0c0c;color:#fff}
 header{background:#000;padding:14px;text-align:center}
-.logo{color:#00ffd5;font-size:22px;font-weight:700}
+.logo{font-size:22px;font-weight:700;color:#00ffd5}
 .hidden{display:none}
 main{padding:12px}
 canvas{width:100%;background:#222;border-radius:14px;margin-top:10px}
-button,input,select{padding:10px;border:none;border-radius:10px}
+button,input{padding:10px;border:none;border-radius:10px}
 button{background:#00ffd5;font-weight:700;cursor:pointer}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
 .slider{grid-column:span 2}
-footer{text-align:center;font-size:12px;color:#aaa;padding:10px}
-
-/* AUTH */
-#auth{padding:20px;text-align:center}
-#auth input{width:100%;margin:6px 0}
-
-/* MARKETPLACE */
 .market{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.bg-item{height:80px;border-radius:10px;cursor:pointer}
-
-/* ADMIN */
-#admin{background:#111;padding:10px;border-radius:10px;margin-top:15px}
-.admin-item{padding:8px;border-bottom:1px solid #333}
-.badge{font-size:12px;padding:3px 6px;border-radius:6px}
-.paid{background:#00ffd5;color:#000}
-.free{background:#444}
+.bg-item{height:80px;border-radius:10px;background-size:cover;cursor:pointer;position:relative}
+.price{position:absolute;bottom:4px;right:4px;font-size:11px;background:#000;padding:3px 6px;border-radius:6px}
+#audit{font-size:12px;color:#aaa;margin-top:10px}
+footer{text-align:center;font-size:12px;color:#aaa;padding:10px}
 </style>
 </head>
 
 <body>
 
 <header>
-  <div class="logo">📸 ABDI KIMUTAI BETT</div>
-  <div>AI Photo Editor PRO</div>
+  <div class="logo" id="brandName">AI Photo Editor</div>
+  <div id="brandTag">Professional Editing Platform</div>
 </header>
 
-<!-- AUTH -->
-<div id="auth">
-  <h3>Login / Register</h3>
-  <input id="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password">
-  <button onclick="login()">Login</button>
-  <button onclick="register()">Register</button>
-  <p id="authMsg"></p>
+<!-- LICENSE -->
+<div id="licenseBox" style="padding:20px;text-align:center">
+  <h3>Enter License Key</h3>
+  <input id="licenseKey" placeholder="XXXX-XXXX-XXXX">
+  <button onclick="loadLicense()">Activate</button>
+  <p id="licenseMsg"></p>
 </div>
 
 <main id="app" class="hidden">
@@ -74,75 +60,72 @@ footer{text-align:center;font-size:12px;color:#aaa;padding:10px}
 <input type="range" id="contrast" min="0" max="200" value="100">
 </div>
 
-<button onclick="beauty('smooth')">Smooth Skin</button>
-<button onclick="beauty('bright')">Bright Face</button>
-<button onclick="beauty('sharp')">Sharp Eyes</button>
-<button onclick="beauty('white')">White Teeth</button>
+<button onclick="detectFace()">AI Face Detect</button>
+<button onclick="toggleLandmarks()">Face Landmarks</button>
 
+<button onclick="beauty()">AI Beauty</button>
 <button onclick="removeBG()">Remove BG</button>
-<button onclick="subscribe()">Subscribe</button>
 
-<button onclick="saveCloud()">Save Cloud</button>
 <button onclick="download()" style="grid-column:span 2">Download</button>
 
 </div>
 
-<h3>🎨 Background Marketplace</h3>
-<div class="market">
-  <div class="bg-item" style="background:linear-gradient(#ff512f,#dd2476)" onclick="applyBG(1)"></div>
-  <div class="bg-item" style="background:linear-gradient(#24c6dc,#514a9d)" onclick="applyBG(2)"></div>
-  <div class="bg-item" style="background:linear-gradient(#11998e,#38ef7d)" onclick="applyBG(3)"></div>
-</div>
+<h3>🖼 Background Store</h3>
+<div class="market" id="bgMarket"></div>
 
-<!-- ADMIN DASHBOARD -->
-<div id="admin" class="hidden">
-  <h3>🛠 Admin Dashboard</h3>
-  <div id="users"></div>
-</div>
+<div id="audit"></div>
 
 </main>
 
 <footer>© 2025 ABDI KIMUTAI BETT</footer>
 
 <script>
-/* 🔥 FIREBASE CONFIG */
+/* FIREBASE */
 firebase.initializeApp({
   apiKey:"PASTE_FIREBASE_KEY",
-  authDomain:"PROJECT.firebaseapp.com",
-  projectId:"PROJECT",
+  projectId:"PROJECT_ID",
   storageBucket:"PROJECT.appspot.com"
 });
-const auth=firebase.auth();
 const db=firebase.firestore();
 const storage=firebase.storage();
 
-/* AUTH */
-auth.onAuthStateChanged(async u=>{
-  if(!u)return;
-  authDiv.style.display="none";
+/* GLOBAL STATE */
+let ROLE="VIEWER";
+let LANDMARKS=false;
+
+/* LICENSE SYSTEM */
+async function loadLicense(){
+  let key=licenseKey.value;
+  let doc=await db.collection("licenses").doc(key).get();
+  if(!doc.exists){licenseMsg.innerText="Invalid License";return;}
+
+  let d=doc.data();
+  ROLE=d.role;
+  brandName.innerText=d.brand;
+  brandTag.innerText=d.tagline;
+
+  licenseBox.classList.add("hidden");
   app.classList.remove("hidden");
 
-  let doc=await db.collection("users").doc(u.uid).get();
-  if(!doc.exists){
-    db.collection("users").doc(u.uid).set({paid:false,admin:false});
-  }
-
-  let data=(await db.collection("users").doc(u.uid).get()).data();
-  if(data.admin) loadAdmin();
-});
-function login(){auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>authMsg.innerText=e.message)}
-function register(){auth.createUserWithEmailAndPassword(email.value,password.value).catch(e=>authMsg.innerText=e.message)}
+  log(`License activated (${ROLE})`);
+  loadBackgrounds();
+}
 
 /* CANVAS */
 const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
 let img=new Image(),original=null;
+
 upload.onchange=e=>{
-  let r=new FileReader();r.onload=()=>img.src=r.result;r.readAsDataURL(e.target.files[0]);
+  let r=new FileReader();
+  r.onload=()=>img.src=r.result;
+  r.readAsDataURL(e.target.files[0]);
 };
 img.onload=()=>{
-  canvas.width=img.width;canvas.height=img.height;
+  canvas.width=img.width;
+  canvas.height=img.height;
   ctx.drawImage(img,0,0);
   original=ctx.getImageData(0,0,canvas.width,canvas.height);
+  log("Image uploaded");
 };
 
 /* BASIC EDIT */
@@ -156,25 +139,30 @@ brightness.oninput=contrast.oninput=()=>{
   ctx.putImageData(d,0,0);
 };
 
-/* AI BEAUTY PRESETS (visual-level) */
-function beauty(type){
-  let d=ctx.getImageData(0,0,canvas.width,canvas.height);
-  for(let i=0;i<d.data.length;i+=4){
-    if(type==="smooth"){d.data[i]+=5;d.data[i+1]+=5}
-    if(type==="bright"){d.data[i]+=15;d.data[i+1]+=15;d.data[i+2]+=15}
-    if(type==="sharp"){d.data[i]*=1.1}
-    if(type==="white"){d.data[i+2]+=10}
-  }
-  ctx.putImageData(d,0,0);
+/* AI FACE DETECTION (REAL ML READY) */
+async function detectFace(){
+  log("Face detection requested");
+  alert("Connect Face++ / MediaPipe / AWS Rekognition here.\nReturns landmarks & bounding boxes.");
 }
 
-/* BACKGROUNDS */
-function applyBG(t){
-  ctx.putImageData(original,0,0);
-  ctx.globalCompositeOperation="destination-over";
-  ctx.fillStyle=t==1?"#dd2476":t==2?"#514a9d":"#38ef7d";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.globalCompositeOperation="source-over";
+/* LANDMARK OVERLAY */
+function toggleLandmarks(){
+  LANDMARKS=!LANDMARKS;
+  if(LANDMARKS){
+    ctx.strokeStyle="lime";
+    ctx.strokeRect(100,80,150,180); // example
+    log("Face landmarks shown");
+  }
+}
+
+/* AI BEAUTY */
+function beauty(){
+  let d=ctx.getImageData(0,0,canvas.width,canvas.height);
+  for(let i=0;i<d.data.length;i+=4){
+    d.data[i]+=12;d.data[i+1]+=12;
+  }
+  ctx.putImageData(d,0,0);
+  log("AI beauty applied");
 }
 
 /* REMOVE BG */
@@ -187,39 +175,45 @@ async function removeBG(){
   let i=new Image();
   i.onload=()=>{canvas.width=i.width;canvas.height=i.height;ctx.drawImage(i,0,0)};
   i.src=u;
+  log("Background removed");
 }
 
-/* CLOUD */
-function saveCloud(){
-  canvas.toBlob(b=>{
-    storage.ref("images/"+Date.now()+".png").put(b).then(()=>alert("Saved"));
-  });
-}
-
-/* SUBSCRIPTION */
-function subscribe(){
-  window.location.href="PASTE_STRIPE_CHECKOUT_LINK";
-}
-
-/* ADMIN */
-async function loadAdmin(){
-  admin.classList.remove("hidden");
-  let snap=await db.collection("users").get();
-  users.innerHTML="";
+/* BACKGROUND STORE */
+async function loadBackgrounds(){
+  bgMarket.innerHTML="";
+  let snap=await db.collection("backgrounds").get();
   snap.forEach(d=>{
-    let u=d.data();
-    users.innerHTML+=`<div class="admin-item">${d.id}
-      <span class="badge ${u.paid?'paid':'free'}">${u.paid?'PAID':'FREE'}</span>
-    </div>`;
+    let bg=d.data();
+    bgMarket.innerHTML+=`
+      <div class="bg-item" style="background-image:url('${bg.url}')" onclick="applyBG('${bg.url}')">
+        <div class="price">$${bg.price}</div>
+      </div>`;
   });
+}
+
+function applyBG(url){
+  let bg=new Image();
+  bg.onload=()=>{
+    ctx.globalCompositeOperation="destination-over";
+    ctx.drawImage(bg,0,0,canvas.width,canvas.height);
+    ctx.globalCompositeOperation="source-over";
+  };
+  bg.src=url;
+  log("Background applied");
+}
+
+/* AUDIT LOG */
+function log(msg){
+  audit.innerHTML+=`• ${new Date().toLocaleTimeString()} – ${msg}<br>`;
 }
 
 /* DOWNLOAD */
 function download(){
   let a=document.createElement("a");
-  a.download="ABDI_KIMUTAI_BETT_PRO.png";
+  a.download="edited.png";
   a.href=canvas.toDataURL();
   a.click();
+  log("Image downloaded");
 }
 </script>
 
