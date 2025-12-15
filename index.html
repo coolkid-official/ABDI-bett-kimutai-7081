@@ -2,94 +2,69 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>ABDI KIMUTAI BETT | AI Photo Editor</title>
+<title>ABDI KIMUTAI BETT | AI Photo Editor PRO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- APP ICON -->
-<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:system-ui,Arial;
-  background:#0c0c0c;
-  color:#fff;
-}
-
-/* SPLASH */
-#splash{
-  position:fixed;
-  inset:0;
-  background:#000;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:26px;
-  font-weight:bold;
-  z-index:9999;
-}
-
-/* HEADER */
-header{
-  text-align:center;
-  padding:12px;
-  background:#000;
-}
-.logo{color:#00ffd5;font-size:22px}
-
-/* MAIN */
-main{padding:10px}
-canvas{
-  width:100%;
-  background:#222;
-  border-radius:12px;
-  touch-action:none;
-}
-
-/* CONTROLS */
-.controls{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:8px;
-  margin-top:10px;
-}
-button,select,input[type=range]{
-  padding:10px;
-  border:none;
-  border-radius:8px;
-}
-button{
-  background:#00ffd5;
-  font-weight:bold;
-}
+body{margin:0;font-family:system-ui;background:#0b0b0b;color:#fff}
+header{background:#000;padding:14px;text-align:center}
+.logo{color:#00ffd5;font-size:22px;font-weight:700}
+.hidden{display:none}
+main{padding:12px}
+canvas{width:100%;background:#222;border-radius:14px;margin-top:10px}
+button,input,select{padding:10px;border:none;border-radius:10px}
+button{background:#00ffd5;font-weight:700;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
 .slider{grid-column:span 2}
+footer{text-align:center;font-size:12px;color:#aaa;padding:10px}
 
-footer{
-  text-align:center;
-  font-size:12px;
-  color:#aaa;
-  padding:8px;
-}
+/* AUTH */
+#auth{padding:20px;text-align:center}
+#auth input{width:100%;margin:6px 0}
+
+/* MARKETPLACE */
+.market{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.bg-item{height:80px;border-radius:10px;cursor:pointer}
+
+/* ADMIN */
+#admin{background:#111;padding:10px;border-radius:10px;margin-top:15px}
+.admin-item{padding:8px;border-bottom:1px solid #333}
+.badge{font-size:12px;padding:3px 6px;border-radius:6px}
+.paid{background:#00ffd5;color:#000}
+.free{background:#444}
 </style>
 </head>
 
 <body>
 
-<div id="splash">📸 ABDI KIMUTAI BETT</div>
-
 <header>
-  <div class="logo">ABDI KIMUTAI BETT</div>
-  <div>AI Photo Editor</div>
+  <div class="logo">📸 ABDI KIMUTAI BETT</div>
+  <div>AI Photo Editor PRO</div>
 </header>
 
-<main>
+<!-- AUTH -->
+<div id="auth">
+  <h3>Login / Register</h3>
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <button onclick="register()">Register</button>
+  <p id="authMsg"></p>
+</div>
+
+<main id="app" class="hidden">
 
 <input type="file" id="upload" accept="image/*">
-
 <canvas id="canvas"></canvas>
 
-<div class="controls">
+<div class="grid">
 
 <div class="slider">Brightness
 <input type="range" id="brightness" min="0" max="200" value="100">
@@ -99,27 +74,30 @@ footer{
 <input type="range" id="contrast" min="0" max="200" value="100">
 </div>
 
-<select id="fontSelect">
-  <option>Arial</option>
-  <option>Georgia</option>
-  <option>Courier New</option>
-  <option>Impact</option>
-</select>
+<button onclick="beauty('smooth')">Smooth Skin</button>
+<button onclick="beauty('bright')">Bright Face</button>
+<button onclick="beauty('sharp')">Sharp Eyes</button>
+<button onclick="beauty('white')">White Teeth</button>
 
-<button onclick="addText()">Add Text</button>
-<button onclick="drawMode()">Draw</button>
+<button onclick="removeBG()">Remove BG</button>
+<button onclick="subscribe()">Subscribe</button>
 
-<button onclick="addSticker()">Sticker</button>
-<button onclick="rotate()">Rotate</button>
-
-<button onclick="preset('vintage')">Vintage</button>
-<button onclick="preset('cool')">Cool</button>
-
-<button onclick="removeBG()">AI Remove BG</button>
-<button onclick="reset()">Reset</button>
-
+<button onclick="saveCloud()">Save Cloud</button>
 <button onclick="download()" style="grid-column:span 2">Download</button>
 
+</div>
+
+<h3>🎨 Background Marketplace</h3>
+<div class="market">
+  <div class="bg-item" style="background:linear-gradient(#ff512f,#dd2476)" onclick="applyBG(1)"></div>
+  <div class="bg-item" style="background:linear-gradient(#24c6dc,#514a9d)" onclick="applyBG(2)"></div>
+  <div class="bg-item" style="background:linear-gradient(#11998e,#38ef7d)" onclick="applyBG(3)"></div>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div id="admin" class="hidden">
+  <h3>🛠 Admin Dashboard</h3>
+  <div id="users"></div>
 </div>
 
 </main>
@@ -127,131 +105,119 @@ footer{
 <footer>© 2025 ABDI KIMUTAI BETT</footer>
 
 <script>
-setTimeout(()=>splash.style.display="none",1500);
+/* 🔥 FIREBASE CONFIG */
+firebase.initializeApp({
+  apiKey:"PASTE_FIREBASE_KEY",
+  authDomain:"PROJECT.firebaseapp.com",
+  projectId:"PROJECT",
+  storageBucket:"PROJECT.appspot.com"
+});
+const auth=firebase.auth();
+const db=firebase.firestore();
+const storage=firebase.storage();
 
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-let img=new Image();
-let original=null;
-let drawing=false;
+/* AUTH */
+auth.onAuthStateChanged(async u=>{
+  if(!u)return;
+  authDiv.style.display="none";
+  app.classList.remove("hidden");
 
-/* IMAGE UPLOAD */
+  let doc=await db.collection("users").doc(u.uid).get();
+  if(!doc.exists){
+    db.collection("users").doc(u.uid).set({paid:false,admin:false});
+  }
+
+  let data=(await db.collection("users").doc(u.uid).get()).data();
+  if(data.admin) loadAdmin();
+});
+function login(){auth.signInWithEmailAndPassword(email.value,password.value).catch(e=>authMsg.innerText=e.message)}
+function register(){auth.createUserWithEmailAndPassword(email.value,password.value).catch(e=>authMsg.innerText=e.message)}
+
+/* CANVAS */
+const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
+let img=new Image(),original=null;
 upload.onchange=e=>{
-  let r=new FileReader();
-  r.onload=()=>img.src=r.result;
-  r.readAsDataURL(e.target.files[0]);
+  let r=new FileReader();r.onload=()=>img.src=r.result;r.readAsDataURL(e.target.files[0]);
 };
-
 img.onload=()=>{
-  canvas.width=img.width;
-  canvas.height=img.height;
+  canvas.width=img.width;canvas.height=img.height;
   ctx.drawImage(img,0,0);
   original=ctx.getImageData(0,0,canvas.width,canvas.height);
 };
 
-/* BRIGHTNESS & CONTRAST */
+/* BASIC EDIT */
 brightness.oninput=contrast.oninput=()=>{
   if(!original)return;
   let d=new ImageData(new Uint8ClampedArray(original.data),original.width,original.height);
   let b=brightness.value/100,c=contrast.value/100;
   for(let i=0;i<d.data.length;i+=4){
-    d.data[i]*=b*c;
-    d.data[i+1]*=b*c;
-    d.data[i+2]*=b*c;
+    d.data[i]*=b*c;d.data[i+1]*=b*c;d.data[i+2]*=b*c;
   }
   ctx.putImageData(d,0,0);
 };
 
-/* FILTERS */
-function preset(type){
+/* AI BEAUTY PRESETS (visual-level) */
+function beauty(type){
   let d=ctx.getImageData(0,0,canvas.width,canvas.height);
   for(let i=0;i<d.data.length;i+=4){
-    let r=d.data[i],g=d.data[i+1],b=d.data[i+2];
-    if(type==="vintage"){d.data[i]=r*1.1;d.data[i+2]=b*0.8}
-    if(type==="cool"){d.data[i+2]+=25}
+    if(type==="smooth"){d.data[i]+=5;d.data[i+1]+=5}
+    if(type==="bright"){d.data[i]+=15;d.data[i+1]+=15;d.data[i+2]+=15}
+    if(type==="sharp"){d.data[i]*=1.1}
+    if(type==="white"){d.data[i+2]+=10}
   }
   ctx.putImageData(d,0,0);
 }
 
-/* TEXT */
-function addText(){
-  let t=prompt("Enter text");
-  if(!t)return;
-  ctx.font=`40px ${fontSelect.value}`;
-  ctx.fillStyle="white";
-  ctx.fillText(t,50,80);
+/* BACKGROUNDS */
+function applyBG(t){
+  ctx.putImageData(original,0,0);
+  ctx.globalCompositeOperation="destination-over";
+  ctx.fillStyle=t==1?"#dd2476":t==2?"#514a9d":"#38ef7d";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.globalCompositeOperation="source-over";
 }
 
-/* STICKERS (PNG/EMOJI) */
-function addSticker(){
-  ctx.font="60px Arial";
-  ctx.fillText("🔥",120,150);
-}
-
-/* DRAW TOOL */
-function drawMode(){
-  canvas.onpointerdown=e=>{drawing=true;ctx.beginPath();ctx.moveTo(e.offsetX,e.offsetY)};
-  canvas.onpointermove=e=>{
-    if(!drawing)return;
-    ctx.lineWidth=5;
-    ctx.strokeStyle="red";
-    ctx.lineTo(e.offsetX,e.offsetY);
-    ctx.stroke();
-  };
-  canvas.onpointerup=()=>drawing=false;
-}
-
-/* ROTATE */
-function rotate(){
-  let t=document.createElement("canvas"),x=t.getContext("2d");
-  t.width=canvas.height;
-  t.height=canvas.width;
-  x.translate(t.width/2,t.height/2);
-  x.rotate(Math.PI/2);
-  x.drawImage(canvas,-canvas.width/2,-canvas.height/2);
-  canvas.width=t.width;
-  canvas.height=t.height;
-  ctx.drawImage(t,0,0);
-  original=ctx.getImageData(0,0,canvas.width,canvas.height);
-}
-
-/* AI BACKGROUND REMOVER */
+/* REMOVE BG */
 async function removeBG(){
-  const API_KEY="PASTE_YOUR_REMOVEBG_API_KEY_HERE";
-
-  let blob=await new Promise(res=>canvas.toBlob(res));
-  let form=new FormData();
-  form.append("image_file",blob);
-
-  let r=await fetch("https://api.remove.bg/v1.0/removebg",{
-    method:"POST",
-    headers:{ "X-Api-Key":API_KEY },
-    body:form
-  });
-
-  let b=await r.blob();
-  let u=URL.createObjectURL(b);
+  const KEY="PASTE_REMOVEBG_KEY";
+  let blob=await new Promise(r=>canvas.toBlob(r));
+  let f=new FormData();f.append("image_file",blob);
+  let res=await fetch("https://api.remove.bg/v1.0/removebg",{method:"POST",headers:{"X-Api-Key":KEY},body:f});
+  let b=await res.blob(),u=URL.createObjectURL(b);
   let i=new Image();
-  i.onload=()=>{
-    canvas.width=i.width;
-    canvas.height=i.height;
-    ctx.drawImage(i,0,0);
-    original=ctx.getImageData(0,0,canvas.width,canvas.height);
-  };
+  i.onload=()=>{canvas.width=i.width;canvas.height=i.height;ctx.drawImage(i,0,0)};
   i.src=u;
 }
 
-/* RESET */
-function reset(){
-  if(original)ctx.putImageData(original,0,0);
-  brightness.value=100;
-  contrast.value=100;
+/* CLOUD */
+function saveCloud(){
+  canvas.toBlob(b=>{
+    storage.ref("images/"+Date.now()+".png").put(b).then(()=>alert("Saved"));
+  });
+}
+
+/* SUBSCRIPTION */
+function subscribe(){
+  window.location.href="PASTE_STRIPE_CHECKOUT_LINK";
+}
+
+/* ADMIN */
+async function loadAdmin(){
+  admin.classList.remove("hidden");
+  let snap=await db.collection("users").get();
+  users.innerHTML="";
+  snap.forEach(d=>{
+    let u=d.data();
+    users.innerHTML+=`<div class="admin-item">${d.id}
+      <span class="badge ${u.paid?'paid':'free'}">${u.paid?'PAID':'FREE'}</span>
+    </div>`;
+  });
 }
 
 /* DOWNLOAD */
 function download(){
   let a=document.createElement("a");
-  a.download="ABDI_KIMUTAI_BETT_EDIT.png";
+  a.download="ABDI_KIMUTAI_BETT_PRO.png";
   a.href=canvas.toDataURL();
   a.click();
 }
