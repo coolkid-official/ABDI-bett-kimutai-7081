@@ -2,37 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Professional AI Photo Editor</title>
+<title>ABDI KIMUTAI BETT | Professional AI Photo Editor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Firebase (Database + Storage only) -->
+<!-- Firebase (optional – marketplace data only) -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
 <style>
-/* ---------- DESIGN SYSTEM ---------- */
 :root{
   --bg:#0b0d10;
-  --panel:#13161b;
+  --panel:#141820;
   --accent:#00ffd5;
   --text:#e6e6e6;
   --muted:#9aa0a6;
   --radius:14px;
 }
-
 *{box-sizing:border-box}
 body{
   margin:0;
-  font-family:Inter,system-ui,sans-serif;
+  font-family:system-ui,Inter,sans-serif;
   background:var(--bg);
   color:var(--text);
 }
-
-/* ---------- HEADER ---------- */
 header{
   background:#000;
-  padding:14px;
+  padding:16px;
   text-align:center;
 }
 .logo{
@@ -44,46 +39,15 @@ header{
   font-size:12px;
   color:var(--muted);
 }
-
-/* ---------- LAYOUT ---------- */
-#licenseGate, main{
+main{
   max-width:1000px;
   margin:auto;
   padding:16px;
-}
-.hidden{display:none}
-
-/* ---------- LICENSE ---------- */
-#licenseGate{
-  text-align:center;
-}
-#licenseGate input{
-  width:100%;
-  padding:12px;
-  border-radius:var(--radius);
-  border:none;
-  margin:10px 0;
-}
-#licenseGate button{
-  width:100%;
-}
-
-/* ---------- EDITOR ---------- */
-.editor{
-  display:grid;
-  gap:16px;
 }
 canvas{
   width:100%;
   background:#222;
   border-radius:var(--radius);
-}
-
-/* ---------- TOOLBAR ---------- */
-.toolbar{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px;
 }
 button{
   background:var(--accent);
@@ -97,20 +61,23 @@ button.secondary{
   background:#1f232a;
   color:var(--text);
 }
-
-/* ---------- SLIDERS ---------- */
+.toolbar{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-top:12px;
+}
 .control{
   background:var(--panel);
   padding:12px;
   border-radius:var(--radius);
+  margin-top:12px;
 }
 .control label{
   font-size:12px;
   color:var(--muted);
 }
 input[type=range]{width:100%}
-
-/* ---------- MARKET ---------- */
 .market{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
@@ -132,17 +99,14 @@ input[type=range]{width:100%}
   padding:4px 6px;
   border-radius:6px;
 }
-
-/* ---------- AUDIT ---------- */
 #audit{
+  margin-top:12px;
   font-size:12px;
   color:var(--muted);
   background:var(--panel);
   padding:10px;
   border-radius:var(--radius);
 }
-
-/* ---------- FOOTER ---------- */
 footer{
   text-align:center;
   font-size:11px;
@@ -155,21 +119,11 @@ footer{
 <body>
 
 <header>
-  <div class="logo" id="brandName">AI Photo Editor</div>
-  <div class="tagline" id="brandTag">Enterprise Visual Platform</div>
+  <div class="logo">ABDI KIMUTAI BETT</div>
+  <div class="tagline">Professional AI Photo Editor</div>
 </header>
 
-<!-- LICENSE -->
-<section id="licenseGate">
-  <h3>Activate License</h3>
-  <input id="licenseInput" placeholder="LICENSE-XXXX-XXXX">
-  <button onclick="activate()">Activate</button>
-  <p id="licenseMsg"></p>
-</section>
-
-<!-- APP -->
-<main id="app" class="hidden">
-<div class="editor">
+<main>
 
 <input type="file" id="upload" accept="image/*">
 
@@ -192,51 +146,36 @@ footer{
   <input type="range" id="contrast" min="0" max="200" value="100">
 </div>
 
-<button class="secondary" onclick="download()">Export Image</button>
+<button class="secondary" onclick="download()" style="margin-top:12px;width:100%">
+Export Image
+</button>
 
-<h3>Background Marketplace</h3>
+<h3 style="margin-top:24px">Background Marketplace</h3>
 <div class="market" id="market"></div>
 
-<h3>Activity Log</h3>
+<h3 style="margin-top:24px">Activity Log</h3>
 <div id="audit"></div>
 
-</div>
 </main>
 
 <footer>
-© 2025 ABDI KIMUTAI BETT · Professional Edition
+© 2025 ABDI KIMUTAI BETT · Free Professional Edition
 </footer>
 
 <script>
-/* ---------------- FIREBASE ---------------- */
+/* OPTIONAL FIREBASE (FOR BACKGROUND STORE DATA) */
 firebase.initializeApp({
   apiKey:"PASTE_FIREBASE_KEY",
-  projectId:"PROJECT_ID",
-  storageBucket:"PROJECT.appspot.com"
+  projectId:"PROJECT_ID"
 });
 const db=firebase.firestore();
 
-/* ---------------- STATE ---------------- */
-let ROLE="VIEWER", LANDMARKS=false;
+/* STATE */
+let LANDMARKS=false;
 const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
 let img=new Image(),original=null;
 
-/* ---------------- LICENSE ---------------- */
-async function activate(){
-  const key=licenseInput.value;
-  const doc=await db.collection("licenses").doc(key).get();
-  if(!doc.exists){licenseMsg.innerText="Invalid license";return;}
-  const d=doc.data();
-  ROLE=d.role;
-  brandName.innerText=d.brand;
-  brandTag.innerText=d.tagline;
-  licenseGate.classList.add("hidden");
-  app.classList.remove("hidden");
-  log(`License activated (${ROLE})`);
-  loadMarket();
-}
-
-/* ---------------- IMAGE ---------------- */
+/* IMAGE */
 upload.onchange=e=>{
   const r=new FileReader();
   r.onload=()=>img.src=r.result;
@@ -250,51 +189,56 @@ img.onload=()=>{
   log("Image loaded");
 };
 
-/* ---------------- CONTROLS ---------------- */
+/* BASIC CONTROLS */
 brightness.oninput=contrast.oninput=()=>{
   if(!original)return;
   let d=new ImageData(new Uint8ClampedArray(original.data),original.width,original.height);
   let b=brightness.value/100,c=contrast.value/100;
   for(let i=0;i<d.data.length;i+=4){
-    d.data[i]*=b*c;d.data[i+1]*=b*c;d.data[i+2]*=b*c;
+    d.data[i]*=b*c;
+    d.data[i+1]*=b*c;
+    d.data[i+2]*=b*c;
   }
   ctx.putImageData(d,0,0);
 };
 
-/* ---------------- AI ---------------- */
+/* AI FEATURES (HOOKS) */
 function detectFace(){
-  log("Face detection request sent (ML API)");
-  alert("Connect MediaPipe / Face++ / Azure Face API here.");
+  log("AI face detection requested");
+  alert("Connect MediaPipe / Face++ / Azure Face API here");
 }
 function toggleLandmarks(){
   LANDMARKS=!LANDMARKS;
   if(LANDMARKS){
     ctx.strokeStyle="lime";
     ctx.strokeRect(120,90,180,220);
-    log("Landmarks displayed");
+    log("Face landmarks shown");
   }
 }
 function beauty(){
   let d=ctx.getImageData(0,0,canvas.width,canvas.height);
   for(let i=0;i<d.data.length;i+=4){
-    d.data[i]+=10;d.data[i+1]+=10;
+    d.data[i]+=10;
+    d.data[i+1]+=10;
   }
   ctx.putImageData(d,0,0);
-  log("Beauty enhancement applied");
+  log("AI beauty applied");
 }
-async function removeBG(){
+function removeBG(){
   log("Background removal requested");
-  alert("remove.bg or custom ML pipeline hook");
+  alert("Connect remove.bg or custom ML model here");
 }
 
-/* ---------------- MARKET ---------------- */
+/* BACKGROUND MARKET */
 async function loadMarket(){
+  if(!db)return;
   const snap=await db.collection("backgrounds").get();
   market.innerHTML="";
   snap.forEach(d=>{
     const b=d.data();
     market.innerHTML+=`
-      <div class="bg" style="background-image:url('${b.url}')" onclick="applyBG('${b.url}')">
+      <div class="bg" style="background-image:url('${b.url}')"
+           onclick="applyBG('${b.url}')">
         <span>$${b.price}</span>
       </div>`;
   });
@@ -310,19 +254,22 @@ function applyBG(url){
   log("Background applied");
 }
 
-/* ---------------- AUDIT ---------------- */
+/* AUDIT LOG */
 function log(m){
   audit.innerHTML+=`• ${new Date().toLocaleTimeString()} – ${m}<br>`;
 }
 
-/* ---------------- EXPORT ---------------- */
+/* EXPORT */
 function download(){
   const a=document.createElement("a");
-  a.download="export.png";
+  a.download="ABDI_KIMUTAI_BETT_EDIT.png";
   a.href=canvas.toDataURL();
   a.click();
   log("Image exported");
 }
+
+/* INIT */
+loadMarket();
 </script>
 
 </body>
